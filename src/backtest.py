@@ -50,8 +50,8 @@ def run_backtest(df):
         X_today = test_row[["ret1", "ret5", "vol10"]].values.reshape(1, -1)
         prob_up = predict_prob(models, X_today)
 
-        entry_price = float(test_row["Close"])
-        exit_price = float(next_row["Close"])
+        entry_price = float(test_row["Close"].item())
+        exit_price = float(next_row["Close"].item())
 
         if prob_up > 0.55:
             ret = (exit_price - entry_price) / entry_price
