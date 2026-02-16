@@ -16,6 +16,6 @@ def build_datasets(df):
     X = X[:-1]
 
     X_today = X.iloc[[-1]]
-    price_today = float(df["Close"].iloc[-1])
+    price_today = float(df["Close"].iloc[-1].item())
 
     return X, y, X_today, price_today
