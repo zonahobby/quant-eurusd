@@ -3,4 +3,4 @@ numpy
 yfinance
 scikit-learn
 xgboost
-matplotlibPC
+matplotlib
