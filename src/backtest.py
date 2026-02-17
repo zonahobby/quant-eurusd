@@ -73,7 +73,11 @@ def run_backtest(df, holding_days_list=(1, 3, 5, 10), risk_per_trade=0.01):
                 X_train = train[feature_cols]
                 y_train = (train["Close"].shift(-holding_days) > train["Close"]).astype(int)[:-holding_days]
                 X_train = X_train[:-holding_days]
-
+                
+                # salta se dati insufficienti
+                if len(X_train) < 50:
+                    continue
+                    
                 models = train_model(X_train, y_train)
 
                 X_today = test_row[feature_cols].values.reshape(1, -1)
