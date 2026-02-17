@@ -23,7 +23,9 @@ def compute_features(df):
     df["mom10"] = df["Close"].pct_change(10)
 
     # regime trend: distanza > 1% dalla MA50
-    df["trend_regime"] = (abs(df["Close"] - df["ma50"]) / df["ma50"]) > 0.01
+    close = df["Close"].squeeze()
+    ma50 = df["ma50"].squeeze()
+    df["trend_regime"] = (abs(close - ma50) / ma50) > 0.01
 
     return df.dropna()
 
