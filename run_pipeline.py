@@ -20,6 +20,7 @@ def main():
 
     # --- BACKTEST ---
     results = run_backtest(daily)
+    print("BACKTEST RESULTS:", results)
     
     # salva metriche complete
     with open("output/metrics.json", "w") as f:
