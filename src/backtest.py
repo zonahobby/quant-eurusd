@@ -66,7 +66,7 @@ def run_backtest(df, holding_days_list=(1, 3, 5, 10), risk_per_trade=0.01):
                 exit_row = df.iloc[i + holding_days]
 
                 # filtro regime
-                if use_filter and not bool(test_row["trend_regime"]):
+                if use_filter and not bool(test_row["trend_regime"].item()):
                     equity_curve.append(equity)
                     continue
 
