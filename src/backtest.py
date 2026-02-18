@@ -51,7 +51,6 @@ def run_backtest(df, holding_days_list=(1, 3, 5, 10), risk_per_trade=0.01):
     df = compute_features(df)
 
     results = {}
-    feature_cols = ["ret1", "ret5", "vol10", "trend", "mom10"]
 
     for holding_days in holding_days_list:
         for regime_name, use_filter in [("all", False), ("trend_only", True)]:
@@ -62,17 +61,18 @@ def run_backtest(df, holding_days_list=(1, 3, 5, 10), risk_per_trade=0.01):
             for i in range(200, len(df) - holding_days):
                 row = df.iloc[i]
 
-                # filtro regime
-                if use_filter and not bool(row["trend_regime"]):
+                # filtro regime robusto
+                if use_filter and not bool(row["trend_regime"].item()):
                     continue
 
                 trades += 1
-                equity *= 1.0001  # crescita fittizia minima per test struttura
+                equity *= 1.0001  # crescita minima fittizia per test struttura
 
-            # SALVATAGGIO SICURO (sempre eseguito)
+            # salvataggio SEMPRE eseguito
             results[f"{holding_days}_{regime_name}"] = {
                 "total_return": float(equity - 1),
                 "num_trades": int(trades),
             }
 
     return results
+
