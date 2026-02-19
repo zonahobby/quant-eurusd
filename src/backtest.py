@@ -51,14 +51,17 @@ def predict_prob(models, X):
 def run_backtest(df, holding_days_list=(1, 3, 5, 10), risk_per_trade=0.01):
     df = df.copy()
 
-    # --- Close scalare robusto ---
     close = df["Close"].squeeze()
 
-    # --- Feature mean reversion ---
     ma20 = close.rolling(20).mean()
+    ma50 = close.rolling(50).mean()
+
     zscore = (close - ma20) / ma20
+    trend_distance = abs(close - ma50) / ma50
 
     df["zscore"] = zscore
+    df["is_lateral"] = trend_distance < 0.01
+
     df = df.dropna()
 
     results = {}
@@ -69,32 +72,28 @@ def run_backtest(df, holding_days_list=(1, 3, 5, 10), risk_per_trade=0.01):
         equity_curve = []
         trades = []
 
-        for i in range(20, len(df) - holding_days):
+        for i in range(50, len(df) - holding_days):
+
+            if not bool(df["is_lateral"].iloc[i]):
+                equity_curve.append(equity)
+                continue
 
             entry_price = float(close.iloc[i])
             exit_price = float(close.iloc[i + holding_days])
             z = float(df["zscore"].iloc[i])
 
-            # --- Segnale contrarian ---
             if z > 0.01:
                 ret = (entry_price - exit_price) / entry_price
-                direction = "SELL"
-
             elif z < -0.01:
                 ret = (exit_price - entry_price) / entry_price
-                direction = "BUY"
-
             else:
                 equity_curve.append(equity)
                 continue
 
-            # --- Risk management 1% ---
             equity *= (1 + risk_per_trade * ret)
             equity_curve.append(equity)
-
             trades.append(ret)
 
-        # --- Metriche ---
         equity_series = pd.Series(equity_curve)
 
         if len(equity_series) > 0:
@@ -115,4 +114,5 @@ def run_backtest(df, holding_days_list=(1, 3, 5, 10), risk_per_trade=0.01):
         }
 
     return results
+
 
