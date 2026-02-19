@@ -7,25 +7,19 @@ import matplotlib.pyplot as plt
 
 def compute_features(df):
     df = df.copy()
-
-    # forza Close a essere una Series scalare (fix yfinance/pandas)
     close = df["Close"].squeeze()
 
-    # ritorni e volatilità
     df["ret1"] = close.pct_change(1)
     df["ret5"] = close.pct_change(5)
     df["vol10"] = close.pct_change().rolling(10).std()
 
-    # medie mobili
     df["ma5"] = close.rolling(5).mean()
     df["ma20"] = close.rolling(20).mean()
     df["ma50"] = close.rolling(50).mean()
 
-    # trend e momentum
     df["trend"] = df["ma5"] - df["ma20"]
     df["mom10"] = close.pct_change(10)
 
-    # regime di trend robusto
     df["trend_regime"] = (abs(close - df["ma50"]) / df["ma50"]) > 0.01
 
     return df.dropna()
@@ -52,10 +46,9 @@ def run_backtest(
     df,
     holding_days_list=(1, 3, 5, 10),
     risk_per_trade=0.01,
-    cost_per_trade=0.001  # 0.1%
+    cost_per_trade=0.001
 ):
     df = df.copy()
-
     close = df["Close"].squeeze()
 
     ma20 = close.rolling(20).mean()
@@ -95,10 +88,7 @@ def run_backtest(
                 equity_curve.append(equity)
                 continue
 
-            # 🔻 COSTI DI TRANSAZIONE
             ret -= cost_per_trade
-
-            # 💼 Risk management 1%
             equity *= (1 + risk_per_trade * ret)
             equity_curve.append(equity)
             trades.append(ret)
@@ -121,7 +111,9 @@ def run_backtest(
             "num_trades": int(len(trades)),
             "avg_holding_days": float(holding_days),
         }
-return results
+
+    return results
+
 
 def walkforward_mean_reversion(
     df,
@@ -189,5 +181,3 @@ def walkforward_mean_reversion(
         })
 
     return yearly_results, equity
-
-
