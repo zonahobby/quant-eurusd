@@ -8,22 +8,25 @@ import matplotlib.pyplot as plt
 def compute_features(df):
     df = df.copy()
 
-    # ritorni e volatilità base
-    df["ret1"] = df["Close"].pct_change(1)
-    df["ret5"] = df["Close"].pct_change(5)
-    df["vol10"] = df["Close"].pct_change().rolling(10).std()
+    # forza Close a essere una Series scalare (fix yfinance/pandas)
+    close = df["Close"].squeeze()
 
-    # trend
-    df["ma5"] = df["Close"].rolling(5).mean()
-    df["ma20"] = df["Close"].rolling(20).mean()
-    df["ma50"] = df["Close"].rolling(50).mean()
+    # ritorni e volatilità
+    df["ret1"] = close.pct_change(1)
+    df["ret5"] = close.pct_change(5)
+    df["vol10"] = close.pct_change().rolling(10).std()
+
+    # medie mobili
+    df["ma5"] = close.rolling(5).mean()
+    df["ma20"] = close.rolling(20).mean()
+    df["ma50"] = close.rolling(50).mean()
+
+    # trend e momentum
     df["trend"] = df["ma5"] - df["ma20"]
+    df["mom10"] = close.pct_change(10)
 
-    # momentum
-    df["mom10"] = df["Close"].pct_change(10)
-
-    # regime trend: distanza > 1% dalla MA50
-    df["trend_regime"] = (abs(df["Close"] - df["ma50"]) / df["ma50"]) > 0.01
+    # regime di trend robusto
+    df["trend_regime"] = (abs(close - df["ma50"]) / df["ma50"]) > 0.01
 
     return df.dropna()
 
