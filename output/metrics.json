@@ -4,16 +4,16 @@
     "num_trades": 2352
   },
   "1_trend_only": {
-    "total_return": 0.13087746649329302,
-    "num_trades": 1230
+    "total_return": 0.13076439005428764,
+    "num_trades": 1229
   },
   "3_all": {
     "total_return": 0.26489390713289707,
     "num_trades": 2350
   },
   "3_trend_only": {
-    "total_return": 0.13087746649329302,
-    "num_trades": 1230
+    "total_return": 0.13076439005428764,
+    "num_trades": 1229
   },
   "5_all": {
     "total_return": 0.26464096629322875,
@@ -28,7 +28,7 @@
     "num_trades": 2343
   },
   "10_trend_only": {
-    "total_return": 0.13053827109468608,
-    "num_trades": 1227
+    "total_return": 0.1304252285718288,
+    "num_trades": 1226
   }
 }
