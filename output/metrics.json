@@ -1,29 +1,29 @@
 {
   "1": {
-    "total_return": 0.0012259406982211285,
-    "max_drawdown": 0.0005457695978662929,
-    "win_rate": 0.5895522388059702,
+    "total_return": -0.00011479801337110906,
+    "max_drawdown": 0.0008213900715962517,
+    "win_rate": 0.5223880597014925,
     "num_trades": 134,
     "avg_holding_days": 1.0
   },
   "3": {
-    "total_return": 0.003495164333987999,
-    "max_drawdown": 0.0004060114158791494,
-    "win_rate": 0.6791044776119403,
+    "total_return": 0.0021514095976702396,
+    "max_drawdown": 0.0005829700091347174,
+    "win_rate": 0.6492537313432836,
     "num_trades": 134,
     "avg_holding_days": 3.0
   },
   "5": {
-    "total_return": 0.004294238919178239,
-    "max_drawdown": 0.0004727266696742435,
-    "win_rate": 0.7089552238805971,
+    "total_return": 0.002949422143672109,
+    "max_drawdown": 0.0005027169144594919,
+    "win_rate": 0.6417910447761194,
     "num_trades": 134,
     "avg_holding_days": 5.0
   },
   "10": {
-    "total_return": 0.0034947305856789512,
-    "max_drawdown": 0.0009049975581648875,
-    "win_rate": 0.5597014925373134,
+    "total_return": 0.0021509764207017223,
+    "max_drawdown": 0.0011449564071219214,
+    "win_rate": 0.5074626865671642,
     "num_trades": 134,
     "avg_holding_days": 10.0
   }
