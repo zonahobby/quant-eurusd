@@ -48,7 +48,12 @@ def predict_prob(models, X):
     return (p1 + p2) / 2
 
 
-def run_backtest(df, holding_days_list=(1, 3, 5, 10), risk_per_trade=0.01):
+def run_backtest(
+    df,
+    holding_days_list=(1, 3, 5, 10),
+    risk_per_trade=0.01,
+    cost_per_trade=0.001  # 0.1%
+):
     df = df.copy()
 
     close = df["Close"].squeeze()
@@ -90,6 +95,10 @@ def run_backtest(df, holding_days_list=(1, 3, 5, 10), risk_per_trade=0.01):
                 equity_curve.append(equity)
                 continue
 
+            # 🔻 COSTI DI TRANSAZIONE
+            ret -= cost_per_trade
+
+            # 💼 Risk management 1%
             equity *= (1 + risk_per_trade * ret)
             equity_curve.append(equity)
             trades.append(ret)
