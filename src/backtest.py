@@ -121,6 +121,7 @@ def run_backtest(
             "num_trades": int(len(trades)),
             "avg_holding_days": float(holding_days),
         }
+return results
 
 def walkforward_mean_reversion(
     df,
@@ -188,8 +189,5 @@ def walkforward_mean_reversion(
         })
 
     return yearly_results, equity
-
-    
-    return results
 
 
