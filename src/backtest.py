@@ -1,45 +1,5 @@
 import pandas as pd
 import numpy as np
-from sklearn.linear_model import LogisticRegression
-from xgboost import XGBClassifier
-import matplotlib.pyplot as plt
-
-
-def compute_features(df):
-    df = df.copy()
-    close = df["Close"].squeeze()
-
-    df["ret1"] = close.pct_change(1)
-    df["ret5"] = close.pct_change(5)
-    df["vol10"] = close.pct_change().rolling(10).std()
-
-    df["ma5"] = close.rolling(5).mean()
-    df["ma20"] = close.rolling(20).mean()
-    df["ma50"] = close.rolling(50).mean()
-
-    df["trend"] = df["ma5"] - df["ma20"]
-    df["mom10"] = close.pct_change(10)
-
-    df["trend_regime"] = (abs(close - df["ma50"]) / df["ma50"]) > 0.01
-
-    return df.dropna()
-
-
-def train_model(X, y):
-    m1 = LogisticRegression(max_iter=1000)
-    m2 = XGBClassifier(n_estimators=50, max_depth=3, eval_metric="logloss")
-
-    m1.fit(X, y.values.ravel())
-    m2.fit(X, y.values.ravel())
-
-    return m1, m2
-
-
-def predict_prob(models, X):
-    m1, m2 = models
-    p1 = m1.predict_proba(X)[0, 1]
-    p2 = m2.predict_proba(X)[0, 1]
-    return (p1 + p2) / 2
 
 
 def run_backtest(
@@ -61,6 +21,7 @@ def run_backtest(
     df["is_lateral"] = trend_distance < 0.01
 
     df = df.dropna()
+    close = close.loc[df.index]  # sincronizzazione sicura
 
     results = {}
 
@@ -90,6 +51,7 @@ def run_backtest(
 
             ret -= cost_per_trade
             equity *= (1 + risk_per_trade * ret)
+
             equity_curve.append(equity)
             trades.append(ret)
 
@@ -137,28 +99,31 @@ def walkforward_mean_reversion(
     df["year"] = df.index.year
 
     df = df.dropna()
+    close = close.loc[df.index]  # sincronizzazione robusta
 
     yearly_results = []
     equity = 1.0
 
     for year in range(start_year, end_year + 1):
 
-        test_df = df[df["year"] == year]
-
-        if len(test_df) == 0:
+        mask = df["year"] == year
+        if mask.sum() == 0:
             continue
+
+        year_df = df[mask]
+        year_close = close[mask]
 
         year_start_equity = equity
         trades = []
 
-        for i in range(len(test_df) - holding_days):
+        for i in range(len(year_df) - holding_days):
 
-            if not bool(test_df["is_lateral"].iloc[i]):
+            if not bool(year_df["is_lateral"].iloc[i]):
                 continue
 
-            entry_price = float(test_df["Close"].iloc[i])
-            exit_price = float(test_df["Close"].iloc[i + holding_days])
-            z = float(test_df["zscore"].iloc[i])
+            entry_price = float(year_close.iloc[i])
+            exit_price = float(year_close.iloc[i + holding_days])
+            z = float(year_df["zscore"].iloc[i])
 
             if z > 0.01:
                 ret = (entry_price - exit_price) / entry_price
