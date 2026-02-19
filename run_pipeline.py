@@ -19,15 +19,14 @@ def main():
     create_plot(daily, signal["forecast"], signal["price"])
 
     # --- BACKTEST ---
-    results = run_backtest(daily)
-    print("BACKTEST RESULTS:", results)
-    
-    # salva metriche complete
+    equity_curve, trades, metrics = run_backtest(daily)
+
+    # salva metriche semplici
     with open("output/metrics.json", "w") as f:
-        json.dump(results, f, indent=2)
-    
+        json.dump(metrics, f, indent=2)
+
     print(signal)
-    print(results)
+    print(metrics)
 
 
 if __name__ == "__main__":
