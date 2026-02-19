@@ -122,6 +122,74 @@ def run_backtest(
             "avg_holding_days": float(holding_days),
         }
 
+def walkforward_mean_reversion(
+    df,
+    start_year=2012,
+    end_year=2024,
+    holding_days=3,
+    risk_per_trade=0.01,
+    cost_per_trade=0.001
+):
+    df = df.copy()
+    close = df["Close"].squeeze()
+
+    ma20 = close.rolling(20).mean()
+    ma50 = close.rolling(50).mean()
+
+    zscore = (close - ma20) / ma20
+    trend_distance = abs(close - ma50) / ma50
+
+    df["zscore"] = zscore
+    df["is_lateral"] = trend_distance < 0.01
+    df["year"] = df.index.year
+
+    df = df.dropna()
+
+    yearly_results = []
+    equity = 1.0
+
+    for year in range(start_year, end_year + 1):
+
+        test_df = df[df["year"] == year]
+
+        if len(test_df) == 0:
+            continue
+
+        year_start_equity = equity
+        trades = []
+
+        for i in range(len(test_df) - holding_days):
+
+            if not bool(test_df["is_lateral"].iloc[i]):
+                continue
+
+            entry_price = float(test_df["Close"].iloc[i])
+            exit_price = float(test_df["Close"].iloc[i + holding_days])
+            z = float(test_df["zscore"].iloc[i])
+
+            if z > 0.01:
+                ret = (entry_price - exit_price) / entry_price
+            elif z < -0.01:
+                ret = (exit_price - entry_price) / entry_price
+            else:
+                continue
+
+            ret -= cost_per_trade
+            equity *= (1 + risk_per_trade * ret)
+            trades.append(ret)
+
+        year_return = equity - year_start_equity
+
+        yearly_results.append({
+            "year": year,
+            "return": float(year_return),
+            "num_trades": int(len(trades)),
+            "win_rate": float(sum(t > 0 for t in trades) / len(trades)) if trades else 0
+        })
+
+    return yearly_results, equity
+
+    
     return results
 
 
