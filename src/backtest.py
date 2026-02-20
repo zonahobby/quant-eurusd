@@ -13,9 +13,10 @@ def run_backtest(
     high = df["High"].squeeze()
     low = df["Low"].squeeze()
 
-    # === Indicatori ===
-    high20 = high.rolling(20).max()
-    low20 = low.rolling(20).min()
+    # === Breakout levels (CORRETTO) ===
+    high20 = high.shift(1).rolling(20).max()
+    low20 = low.shift(1).rolling(20).min()
+
     range20 = high20 - low20
     range_mean = range20.rolling(50).mean()
 
@@ -40,14 +41,14 @@ def run_backtest(
     i = 50
     while i < len(df) - 1:
 
-        # --- Compressione ---
+        # Compressione
         if df["range20"].iloc[i] > df["range_mean"].iloc[i]:
             i += 1
             continue
 
         entry_price = df["close"].iloc[i]
 
-        # --- Breakout ---
+        # Breakout
         if df["close"].iloc[i] > df["high20"].iloc[i]:
             direction = 1
         elif df["close"].iloc[i] < df["low20"].iloc[i]:
