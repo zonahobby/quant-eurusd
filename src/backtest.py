@@ -2,6 +2,20 @@ import pandas as pd
 import numpy as np
 
 
+def compute_rsi(series, period=3):
+    delta = series.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+
+    avg_gain = gain.rolling(period).mean()
+    avg_loss = loss.rolling(period).mean()
+
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+
+    return rsi
+
+
 def run_backtest(
     df,
     risk_per_trade=0.01,
@@ -14,12 +28,10 @@ def run_backtest(
     high = df["High"].squeeze()
     low = df["Low"].squeeze()
 
-    # === Indicatori ===
+    ma20 = close.rolling(20).mean()
     ma50 = close.rolling(50).mean()
-    ma200 = close.rolling(200).mean()
 
-    high20 = high.shift(1).rolling(20).max()
-    low20 = low.shift(1).rolling(20).min()
+    rsi3 = compute_rsi(close, 3)
 
     tr1 = high - low
     tr2 = abs(high - close.shift())
@@ -28,10 +40,9 @@ def run_backtest(
 
     df = pd.DataFrame({
         "close": close,
+        "ma20": ma20,
         "ma50": ma50,
-        "ma200": ma200,
-        "high20": high20,
-        "low20": low20,
+        "rsi3": rsi3,
         "atr": atr
     }).dropna()
 
@@ -41,57 +52,70 @@ def run_backtest(
     position = 0
     entry_price = 0
     stop_level = 0
+    entry_index = 0
 
-    for i in range(200, len(df)):
+    for i in range(50, len(df)):
 
         price = df["close"].iloc[i]
+        weekday = df.index[i].weekday()
 
-        # === Trend direction ===
-        if df["ma50"].iloc[i] > df["ma200"].iloc[i]:
-            trend = 1
-        elif df["ma50"].iloc[i] < df["ma200"].iloc[i]:
-            trend = -1
-        else:
-            trend = 0
-
-        # === Entry logic ===
+        # === ENTRY ===
         if position == 0:
 
-            if trend == 1 and price > df["high20"].iloc[i]:
+            if df["ma20"].iloc[i] > df["ma50"].iloc[i] and df["rsi3"].iloc[i] < 20:
                 position = 1
                 entry_price = price
-                stop_level = price - 2 * df["atr"].iloc[i]
+                stop_level = price - 1.5 * df["atr"].iloc[i]
+                entry_index = i
 
-            elif trend == -1 and price < df["low20"].iloc[i]:
+            elif df["ma20"].iloc[i] < df["ma50"].iloc[i] and df["rsi3"].iloc[i] > 80:
                 position = -1
                 entry_price = price
-                stop_level = price + 2 * df["atr"].iloc[i]
+                stop_level = price + 1.5 * df["atr"].iloc[i]
+                entry_index = i
 
-        # === Manage position ===
+        # === MANAGE POSITION ===
         else:
 
-            # Stop hit
+            holding_days = i - entry_index
+
+            exit_trade = False
+
+            # Stop
             if position == 1 and price <= stop_level:
                 ret = (price - entry_price) / entry_price
-                ret -= cost_per_trade
-                equity *= (1 + risk_per_trade * ret)
-                trades.append(ret)
-                position = 0
+                exit_trade = True
 
             elif position == -1 and price >= stop_level:
                 ret = (entry_price - price) / entry_price
-                ret -= cost_per_trade
-                equity *= (1 + risk_per_trade * ret)
-                trades.append(ret)
-                position = 0
+                exit_trade = True
 
-            # Trend flip exit
-            elif (position == 1 and trend == -1) or (position == -1 and trend == 1):
+            # RSI neutral exit
+            elif (position == 1 and df["rsi3"].iloc[i] > 50) or \
+                 (position == -1 and df["rsi3"].iloc[i] < 50):
                 if position == 1:
                     ret = (price - entry_price) / entry_price
                 else:
                     ret = (entry_price - price) / entry_price
+                exit_trade = True
 
+            # Max 5 giorni
+            elif holding_days >= 5:
+                if position == 1:
+                    ret = (price - entry_price) / entry_price
+                else:
+                    ret = (entry_price - price) / entry_price
+                exit_trade = True
+
+            # Venerdì chiudi
+            elif weekday == 4:
+                if position == 1:
+                    ret = (price - entry_price) / entry_price
+                else:
+                    ret = (entry_price - price) / entry_price
+                exit_trade = True
+
+            if exit_trade:
                 ret -= cost_per_trade
                 equity *= (1 + risk_per_trade * ret)
                 trades.append(ret)
