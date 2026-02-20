@@ -1,0 +1,32 @@
+{
+  "EURUSD=X": {
+    "total_return": 0.0005808859350997508,
+    "max_drawdown": 0.0006797532783826499,
+    "win_rate": 0.6666666666666666,
+    "num_trades": 45
+  },
+  "GBPUSD=X": {
+    "total_return": 0.0008932203611227152,
+    "max_drawdown": 0.0007650736062564389,
+    "win_rate": 0.6222222222222222,
+    "num_trades": 45
+  },
+  "USDJPY=X": {
+    "total_return": -0.0003707083604521655,
+    "max_drawdown": 0.0012317994505758323,
+    "win_rate": 0.5555555555555556,
+    "num_trades": 27
+  },
+  "AUDUSD=X": {
+    "total_return": -0.0015444090435126068,
+    "max_drawdown": 0.0023237871140737026,
+    "win_rate": 0.5555555555555556,
+    "num_trades": 45
+  },
+  "USDCAD=X": {
+    "total_return": 2.079885115979785e-05,
+    "max_drawdown": 0.0005016697338163654,
+    "win_rate": 0.5789473684210527,
+    "num_trades": 38
+  }
+}
