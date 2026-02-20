@@ -2,9 +2,6 @@ import pandas as pd
 import numpy as np
 
 
-# ==========================================================
-# BACKTEST DINAMICO MEAN REVERSION
-# ==========================================================
 def run_backtest(
     df,
     risk_per_trade=0.01,
@@ -27,6 +24,12 @@ def run_backtest(
     df = df.dropna()
     close = close.loc[df.index]
 
+    # 🔥 Soglie dinamiche
+    z_std = df["zscore"].std()
+
+    entry_threshold = 1.5 * z_std
+    exit_threshold = 0.2 * z_std
+
     equity = 1.0
     equity_curve = []
     trades = []
@@ -42,10 +45,10 @@ def run_backtest(
         z = float(df["zscore"].iloc[i])
 
         # ---- ENTRY ----
-        if z < -0.01:
-            direction = 1   # BUY
-        elif z > 0.01:
-            direction = -1  # SELL
+        if z < -entry_threshold:
+            direction = 1
+        elif z > entry_threshold:
+            direction = -1
         else:
             equity_curve.append(equity)
             i += 1
@@ -53,13 +56,13 @@ def run_backtest(
 
         entry_price = float(close.iloc[i])
 
-        # ---- EXIT: ritorno verso media ----
+        # ---- EXIT dinamico ----
         j = i + 1
         while j < len(df):
 
             z_exit = float(df["zscore"].iloc[j])
 
-            if abs(z_exit) < 0.002:
+            if abs(z_exit) < exit_threshold:
                 exit_price = float(close.iloc[j])
                 break
 
@@ -93,101 +96,7 @@ def run_backtest(
         "total_return": float(total_return),
         "max_drawdown": float(max_drawdown),
         "win_rate": float(win_rate),
-        "num_trades": int(len(trades))
+        "num_trades": int(len(trades)),
+        "entry_threshold": float(entry_threshold),
+        "exit_threshold": float(exit_threshold)
     }
-
-
-# ==========================================================
-# WALK-FORWARD OUT-OF-SAMPLE
-# ==========================================================
-def walkforward_mean_reversion(
-    df,
-    start_year=2012,
-    end_year=2024,
-    risk_per_trade=0.01,
-    cost_per_trade=0.001
-):
-    df = df.copy()
-    close = df["Close"].squeeze()
-
-    ma20 = close.rolling(20).mean()
-    ma50 = close.rolling(50).mean()
-    vol10 = close.pct_change().rolling(10).std()
-
-    zscore = (close - ma20) / ma20
-    trend_distance = abs(close - ma50) / ma50
-
-    df["zscore"] = zscore
-    df["is_lateral"] = trend_distance < 0.01
-    df["low_vol"] = vol10 < vol10.median()
-    df["year"] = df.index.year
-
-    df = df.dropna()
-    close = close.loc[df.index]
-
-    yearly_results = []
-    equity = 1.0
-
-    for year in range(start_year, end_year + 1):
-
-        mask = df["year"] == year
-        if mask.sum() == 0:
-            continue
-
-        year_df = df[mask]
-        year_close = close[mask]
-
-        year_start_equity = equity
-        trades = []
-
-        i = 0
-        while i < len(year_df) - 1:
-
-            if not bool(year_df["is_lateral"].iloc[i]) or not bool(year_df["low_vol"].iloc[i]):
-                i += 1
-                continue
-
-            z = float(year_df["zscore"].iloc[i])
-
-            if z < -0.01:
-                direction = 1
-            elif z > 0.01:
-                direction = -1
-            else:
-                i += 1
-                continue
-
-            entry_price = float(year_close.iloc[i])
-
-            j = i + 1
-            while j < len(year_df):
-
-                z_exit = float(year_df["zscore"].iloc[j])
-
-                if abs(z_exit) < 0.002:
-                    exit_price = float(year_close.iloc[j])
-                    break
-
-                j += 1
-            else:
-                exit_price = float(year_close.iloc[-1])
-                j = len(year_df) - 1
-
-            ret = direction * (exit_price - entry_price) / entry_price
-            ret -= cost_per_trade
-
-            equity *= (1 + risk_per_trade * ret)
-            trades.append(ret)
-
-            i = j + 1
-
-        year_return = equity - year_start_equity
-
-        yearly_results.append({
-            "year": year,
-            "return": float(year_return),
-            "num_trades": int(len(trades)),
-            "win_rate": float(sum(t > 0 for t in trades) / len(trades)) if trades else 0
-        })
-
-    return yearly_results, equity
