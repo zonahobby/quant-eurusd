@@ -10,106 +10,92 @@ def run_backtest(
 
     df = df.copy().dropna()
 
-    # forza colonne a scalari puri
     close = df["Close"].squeeze()
     high = df["High"].squeeze()
     low = df["Low"].squeeze()
 
+    # === Indicatori ===
+    ma50 = close.rolling(50).mean()
+    ma200 = close.rolling(200).mean()
+
+    high20 = high.shift(1).rolling(20).max()
+    low20 = low.shift(1).rolling(20).min()
+
+    tr1 = high - low
+    tr2 = abs(high - close.shift())
+    tr3 = abs(low - close.shift())
+    atr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1).rolling(14).mean()
+
     df = pd.DataFrame({
         "close": close,
-        "high": high,
-        "low": low
-    })
-
-    df["hour"] = df.index.hour
-    df["date"] = df.index.date
+        "ma50": ma50,
+        "ma200": ma200,
+        "high20": high20,
+        "low20": low20,
+        "atr": atr
+    }).dropna()
 
     equity = 1.0
     trades = []
 
-    grouped = df.groupby("date")
+    position = 0
+    entry_price = 0
+    stop_level = 0
 
-    for date, day_data in grouped:
+    for i in range(200, len(df)):
 
-        if len(day_data) < 10:
-            continue
+        price = df["close"].iloc[i]
 
-        # Asian session 00–07
-        asian = day_data[(day_data["hour"] >= 0) & (day_data["hour"] < 8)]
+        # === Trend direction ===
+        if df["ma50"].iloc[i] > df["ma200"].iloc[i]:
+            trend = 1
+        elif df["ma50"].iloc[i] < df["ma200"].iloc[i]:
+            trend = -1
+        else:
+            trend = 0
 
-        if len(asian) < 5:
-            continue
+        # === Entry logic ===
+        if position == 0:
 
-        high_asia = float(asian["high"].max())
-        low_asia = float(asian["low"].min())
-        asian_range = high_asia - low_asia
-
-        if asian_range == 0:
-            continue
-
-        # London session 08+
-        london = day_data[day_data["hour"] >= 8]
-
-        if len(london) == 0:
-            continue
-
-        entry_price = None
-        direction = None
-        entry_index = None
-
-        # breakout detection
-        for i in range(len(london)):
-            price = float(london["close"].iloc[i])
-
-            if price > high_asia:
+            if trend == 1 and price > df["high20"].iloc[i]:
+                position = 1
                 entry_price = price
-                direction = 1
-                entry_index = i
-                break
+                stop_level = price - 2 * df["atr"].iloc[i]
 
-            elif price < low_asia:
+            elif trend == -1 and price < df["low20"].iloc[i]:
+                position = -1
                 entry_price = price
-                direction = -1
-                entry_index = i
-                break
+                stop_level = price + 2 * df["atr"].iloc[i]
 
-        if entry_price is None:
-            continue
+        # === Manage position ===
+        else:
 
-        stop_distance = asian_range
-        target_distance = 1.5 * asian_range
+            # Stop hit
+            if position == 1 and price <= stop_level:
+                ret = (price - entry_price) / entry_price
+                ret -= cost_per_trade
+                equity *= (1 + risk_per_trade * ret)
+                trades.append(ret)
+                position = 0
 
-        trade_closed = False
+            elif position == -1 and price >= stop_level:
+                ret = (entry_price - price) / entry_price
+                ret -= cost_per_trade
+                equity *= (1 + risk_per_trade * ret)
+                trades.append(ret)
+                position = 0
 
-        for j in range(entry_index, len(london)):
+            # Trend flip exit
+            elif (position == 1 and trend == -1) or (position == -1 and trend == 1):
+                if position == 1:
+                    ret = (price - entry_price) / entry_price
+                else:
+                    ret = (entry_price - price) / entry_price
 
-            price = float(london["close"].iloc[j])
-
-            if direction == 1:
-                if price <= entry_price - stop_distance:
-                    ret = -stop_distance / entry_price
-                    trade_closed = True
-                elif price >= entry_price + target_distance:
-                    ret = target_distance / entry_price
-                    trade_closed = True
-
-            else:
-                if price >= entry_price + stop_distance:
-                    ret = -stop_distance / entry_price
-                    trade_closed = True
-                elif price <= entry_price - target_distance:
-                    ret = target_distance / entry_price
-                    trade_closed = True
-
-            if trade_closed:
-                break
-
-        if not trade_closed:
-            ret = 0
-
-        ret -= cost_per_trade
-        equity *= (1 + risk_per_trade * ret)
-        trades.append(ret)
+                ret -= cost_per_trade
+                equity *= (1 + risk_per_trade * ret)
+                trades.append(ret)
+                position = 0
 
     if len(trades) == 0:
         return {
