@@ -5,98 +5,110 @@ import numpy as np
 def run_backtest(
     df,
     risk_per_trade=0.01,
-    cost_per_trade=0.001
+    cost_per_trade=0.0005  # spread realistico H1
 ):
     df = df.copy()
     close = df["Close"].squeeze()
+    high = df["High"].squeeze()
+    low = df["Low"].squeeze()
 
-    ma20 = close.rolling(20).mean()
-    ma50 = close.rolling(50).mean()
-    vol10 = close.pct_change().rolling(10).std()
+    # === Indicatori ===
+    df["high20"] = high.rolling(20).max()
+    df["low20"] = low.rolling(20).min()
+    df["range20"] = df["high20"] - df["low20"]
+    df["range_mean"] = df["range20"].rolling(50).mean()
 
-    zscore = (close - ma20) / ma20
-    trend_distance = abs(close - ma50) / ma50
-
-    df["zscore"] = zscore
-    df["is_lateral"] = trend_distance < 0.01
-    df["low_vol"] = vol10 < vol10.median()
+    # ATR
+    tr1 = high - low
+    tr2 = abs(high - close.shift())
+    tr3 = abs(low - close.shift())
+    df["atr"] = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1).rolling(14).mean()
 
     df = df.dropna()
-    close = close.loc[df.index]
-
-    # 🔥 Soglie dinamiche
-    z_std = df["zscore"].std()
-
-    entry_threshold = 1.5 * z_std
-    exit_threshold = 0.2 * z_std
 
     equity = 1.0
-    equity_curve = []
     trades = []
 
     i = 50
     while i < len(df) - 1:
 
-        if not bool(df["is_lateral"].iloc[i]) or not bool(df["low_vol"].iloc[i]):
-            equity_curve.append(equity)
+        row = df.iloc[i]
+
+        # condizione compressione
+        if row["range20"] > row["range_mean"]:
             i += 1
             continue
 
-        z = float(df["zscore"].iloc[i])
+        entry_price = close.iloc[i]
 
-        # ---- ENTRY ----
-        if z < -entry_threshold:
+        # LONG breakout
+        if close.iloc[i] > row["high20"]:
             direction = 1
-        elif z > entry_threshold:
+        # SHORT breakout
+        elif close.iloc[i] < row["low20"]:
             direction = -1
         else:
-            equity_curve.append(equity)
             i += 1
             continue
 
-        entry_price = float(close.iloc[i])
+        atr = row["atr"]
+        stop_distance = atr
+        target_distance = 2 * atr
 
-        # ---- EXIT dinamico ----
         j = i + 1
+        trade_closed = False
+
         while j < len(df):
 
-            z_exit = float(df["zscore"].iloc[j])
+            price = close.iloc[j]
 
-            if abs(z_exit) < exit_threshold:
-                exit_price = float(close.iloc[j])
+            if direction == 1:
+                if price <= entry_price - stop_distance:
+                    ret = -stop_distance / entry_price
+                    trade_closed = True
+                elif price >= entry_price + target_distance:
+                    ret = target_distance / entry_price
+                    trade_closed = True
+            else:
+                if price >= entry_price + stop_distance:
+                    ret = -stop_distance / entry_price
+                    trade_closed = True
+                elif price <= entry_price - target_distance:
+                    ret = target_distance / entry_price
+                    trade_closed = True
+
+            if trade_closed:
                 break
 
             j += 1
-        else:
-            exit_price = float(close.iloc[-1])
-            j = len(df) - 1
 
-        ret = direction * (exit_price - entry_price) / entry_price
+        if not trade_closed:
+            ret = 0
+
         ret -= cost_per_trade
-
         equity *= (1 + risk_per_trade * ret)
-
-        equity_curve.append(equity)
         trades.append(ret)
 
         i = j + 1
 
+    if len(trades) == 0:
+        return {
+            "total_return": 0.0,
+            "max_drawdown": 0.0,
+            "win_rate": 0.0,
+            "num_trades": 0
+        }
+
+    equity_curve = np.cumprod([1 + risk_per_trade * t for t in trades])
     equity_series = pd.Series(equity_curve)
 
-    if len(equity_series) > 0:
-        total_return = equity_series.iloc[-1] - 1
-        max_drawdown = ((equity_series.cummax() - equity_series) / equity_series.cummax()).max()
-    else:
-        total_return = 0
-        max_drawdown = 0
-
-    win_rate = float(np.mean([t > 0 for t in trades])) if trades else 0
+    total_return = equity_series.iloc[-1] - 1
+    max_drawdown = ((equity_series.cummax() - equity_series) / equity_series.cummax()).max()
+    win_rate = np.mean([t > 0 for t in trades])
 
     return {
         "total_return": float(total_return),
         "max_drawdown": float(max_drawdown),
         "win_rate": float(win_rate),
-        "num_trades": int(len(trades)),
-        "entry_threshold": float(entry_threshold),
-        "exit_threshold": float(exit_threshold)
+        "num_trades": int(len(trades))
     }
