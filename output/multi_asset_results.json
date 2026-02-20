@@ -1,58 +1,58 @@
 {
   "EURUSD=X": {
     "rows_downloaded": 3905,
-    "download_time_seconds": 0.43,
+    "download_time_seconds": 0.66,
     "status": "backtest_done",
     "backtest": {
-      "total_return": 0.0005412870353738164,
-      "max_drawdown": 0.0014296146934044624,
-      "win_rate": 0.5481481481481482,
-      "num_trades": 405
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "win_rate": 0.0,
+      "num_trades": 0
     }
   },
   "GBPUSD=X": {
     "rows_downloaded": 3905,
-    "download_time_seconds": 0.26,
+    "download_time_seconds": 0.55,
     "status": "backtest_done",
     "backtest": {
-      "total_return": -0.0006472542125397496,
-      "max_drawdown": 0.0016842209302941988,
-      "win_rate": 0.5199004975124378,
-      "num_trades": 402
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "win_rate": 0.0,
+      "num_trades": 0
     }
   },
   "USDJPY=X": {
-    "rows_downloaded": 3904,
-    "download_time_seconds": 0.23,
+    "rows_downloaded": 3905,
+    "download_time_seconds": 0.51,
     "status": "backtest_done",
     "backtest": {
-      "total_return": 0.0033190704283787564,
-      "max_drawdown": 0.0008319290129517583,
-      "win_rate": 0.5950617283950618,
-      "num_trades": 405
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "win_rate": 0.0,
+      "num_trades": 0
     }
   },
   "AUDUSD=X": {
     "rows_downloaded": 3904,
-    "download_time_seconds": 0.21,
+    "download_time_seconds": 0.54,
     "status": "backtest_done",
     "backtest": {
-      "total_return": 0.0007514121928013928,
-      "max_drawdown": 0.0021817943344519908,
-      "win_rate": 0.5450121654501217,
-      "num_trades": 411
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "win_rate": 0.0,
+      "num_trades": 0
     }
   },
   "USDCAD=X": {
     "rows_downloaded": 3904,
-    "download_time_seconds": 0.26,
+    "download_time_seconds": 0.67,
     "status": "backtest_done",
     "backtest": {
-      "total_return": -0.002287923362729094,
-      "max_drawdown": 0.0021750308185746435,
-      "win_rate": 0.4975369458128079,
-      "num_trades": 406
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "win_rate": 0.0,
+      "num_trades": 0
     }
   },
-  "combined_equity_multiplier": 1.0016692282709043
+  "combined_equity_multiplier": 1.0
 }
