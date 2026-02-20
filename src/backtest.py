@@ -5,26 +5,34 @@ import numpy as np
 def run_backtest(
     df,
     risk_per_trade=0.01,
-    cost_per_trade=0.0005  # spread realistico H1
+    cost_per_trade=0.0005
 ):
     df = df.copy()
+
     close = df["Close"].squeeze()
     high = df["High"].squeeze()
     low = df["Low"].squeeze()
 
     # === Indicatori ===
-    df["high20"] = high.rolling(20).max()
-    df["low20"] = low.rolling(20).min()
-    df["range20"] = df["high20"] - df["low20"]
-    df["range_mean"] = df["range20"].rolling(50).mean()
+    high20 = high.rolling(20).max()
+    low20 = low.rolling(20).min()
+    range20 = high20 - low20
+    range_mean = range20.rolling(50).mean()
 
     # ATR
     tr1 = high - low
     tr2 = abs(high - close.shift())
     tr3 = abs(low - close.shift())
-    df["atr"] = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1).rolling(14).mean()
+    atr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1).rolling(14).mean()
 
-    df = df.dropna()
+    df = pd.DataFrame({
+        "close": close,
+        "high20": high20,
+        "low20": low20,
+        "range20": range20,
+        "range_mean": range_mean,
+        "atr": atr
+    }).dropna()
 
     equity = 1.0
     trades = []
@@ -32,35 +40,31 @@ def run_backtest(
     i = 50
     while i < len(df) - 1:
 
-        row = df.iloc[i]
-
-        # condizione compressione
-        if row["range20"] > row["range_mean"]:
+        # --- Compressione ---
+        if df["range20"].iloc[i] > df["range_mean"].iloc[i]:
             i += 1
             continue
 
-        entry_price = close.iloc[i]
+        entry_price = df["close"].iloc[i]
 
-        # LONG breakout
-        if close.iloc[i] > row["high20"]:
+        # --- Breakout ---
+        if df["close"].iloc[i] > df["high20"].iloc[i]:
             direction = 1
-        # SHORT breakout
-        elif close.iloc[i] < row["low20"]:
+        elif df["close"].iloc[i] < df["low20"].iloc[i]:
             direction = -1
         else:
             i += 1
             continue
 
-        atr = row["atr"]
-        stop_distance = atr
-        target_distance = 2 * atr
+        stop_distance = df["atr"].iloc[i]
+        target_distance = 2 * stop_distance
 
         j = i + 1
         trade_closed = False
 
         while j < len(df):
 
-            price = close.iloc[j]
+            price = df["close"].iloc[j]
 
             if direction == 1:
                 if price <= entry_price - stop_distance:
