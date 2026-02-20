@@ -15,8 +15,8 @@ PAIRS = [
 def download_pair(symbol):
     df = yf.download(
         symbol,
-        period="5y",
-        interval="4h",
+        period="730d",      # ~2 anni
+        interval="1h",      # 1 ora
         progress=False
     )
     df = df.dropna()
@@ -30,11 +30,11 @@ def main():
 
     for pair in PAIRS:
 
-        print(f"\nRunning H4 backtest for {pair}")
+        print(f"\nRunning H1 backtest for {pair}")
 
         df = download_pair(pair)
 
-        if len(df) < 200:
+        if len(df) < 500:
             print("Not enough data.")
             continue
 
@@ -47,7 +47,7 @@ def main():
     with open("output/multi_asset_results.json", "w") as f:
         json.dump(all_results, f, indent=2)
 
-    print("\n=== H4 MULTI ASSET RESULTS ===")
+    print("\n=== H1 MULTI ASSET RESULTS ===")
     print(all_results)
     print("Combined equity multiplier:", combined_equity)
 
