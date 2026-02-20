@@ -59,26 +59,25 @@ def run_backtest(
         price = df["close"].iloc[i]
         weekday = df.index[i].weekday()
 
-        # === ENTRY ===
+        # ===== ENTRY =====
         if position == 0:
 
-            if df["ma20"].iloc[i] > df["ma50"].iloc[i] and df["rsi3"].iloc[i] < 20:
+            if df["ma20"].iloc[i] > df["ma50"].iloc[i] and df["rsi3"].iloc[i] < 15:
                 position = 1
                 entry_price = price
                 stop_level = price - 1.5 * df["atr"].iloc[i]
                 entry_index = i
 
-            elif df["ma20"].iloc[i] < df["ma50"].iloc[i] and df["rsi3"].iloc[i] > 80:
+            elif df["ma20"].iloc[i] < df["ma50"].iloc[i] and df["rsi3"].iloc[i] > 85:
                 position = -1
                 entry_price = price
                 stop_level = price + 1.5 * df["atr"].iloc[i]
                 entry_index = i
 
-        # === MANAGE POSITION ===
+        # ===== MANAGE =====
         else:
 
             holding_days = i - entry_index
-
             exit_trade = False
 
             # Stop
@@ -90,17 +89,17 @@ def run_backtest(
                 ret = (entry_price - price) / entry_price
                 exit_trade = True
 
-            # RSI neutral exit
-            elif (position == 1 and df["rsi3"].iloc[i] > 50) or \
-                 (position == -1 and df["rsi3"].iloc[i] < 50):
+            # RSI profit exit (più larga)
+            elif (position == 1 and df["rsi3"].iloc[i] > 60) or \
+                 (position == -1 and df["rsi3"].iloc[i] < 40):
                 if position == 1:
                     ret = (price - entry_price) / entry_price
                 else:
                     ret = (entry_price - price) / entry_price
                 exit_trade = True
 
-            # Max 5 giorni
-            elif holding_days >= 5:
+            # Max 4 giorni
+            elif holding_days >= 4:
                 if position == 1:
                     ret = (price - entry_price) / entry_price
                 else:
