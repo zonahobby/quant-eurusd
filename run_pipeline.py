@@ -1,7 +1,7 @@
-from src.backtest import run_backtest
 import yfinance as yf
 import json
 import time
+from src.backtest import run_backtest
 
 
 PAIRS = [
@@ -16,8 +16,8 @@ PAIRS = [
 def download_pair(symbol):
     df = yf.download(
         symbol,
-        period="730d",      # ~2 anni
-        interval="1h",      # 1 ora
+        period="15y",     # storico lungo
+        interval="1d",    # DAILY
         progress=False
     )
     df = df.dropna()
@@ -37,22 +37,20 @@ def main():
         df = download_pair(pair)
         elapsed = round(time.time() - start_time, 2)
 
-        num_rows = len(df)
+        rows = len(df)
 
-        print(f"{pair} → rows: {num_rows} | download time: {elapsed}s")
+        print(f"{pair} → rows: {rows} | download time: {elapsed}s")
 
         pair_result = {
-            "rows_downloaded": num_rows,
+            "rows_downloaded": rows,
             "download_time_seconds": elapsed
         }
 
-        # Se troppo pochi dati, saltiamo ma lo registriamo
-        if num_rows < 200:
+        if rows < 500:
             pair_result["status"] = "not_enough_data"
             all_results[pair] = pair_result
             continue
 
-        # Esegui backtest
         result = run_backtest(df)
 
         pair_result["status"] = "backtest_done"
@@ -60,6 +58,7 @@ def main():
 
         all_results[pair] = pair_result
 
+        # Combiniamo equity in modo semplice
         combined_equity *= (1 + result["total_return"])
 
     all_results["combined_equity_multiplier"] = combined_equity
@@ -67,7 +66,7 @@ def main():
     with open("output/multi_asset_results.json", "w") as f:
         json.dump(all_results, f, indent=2)
 
-    print("\n=== H1 MULTI ASSET RESULTS ===")
+    print("\n=== MACRO TREND DAILY RESULTS ===")
     print(all_results)
 
 
