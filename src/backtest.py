@@ -8,8 +8,18 @@ def run_backtest(
     cost_per_trade=0.0005
 ):
 
-    df = df.copy()
-    df = df.dropna()
+    df = df.copy().dropna()
+
+    # forza colonne a scalari puri
+    close = df["Close"].squeeze()
+    high = df["High"].squeeze()
+    low = df["Low"].squeeze()
+
+    df = pd.DataFrame({
+        "close": close,
+        "high": high,
+        "low": low
+    })
 
     df["hour"] = df.index.hour
     df["date"] = df.index.date
@@ -24,18 +34,20 @@ def run_backtest(
         if len(day_data) < 10:
             continue
 
-        # Asian session: 00:00–07:00
+        # Asian session 00–07
         asian = day_data[(day_data["hour"] >= 0) & (day_data["hour"] < 8)]
 
         if len(asian) < 5:
             continue
 
-        high_asia = asian["High"].max()
-        low_asia = asian["Low"].min()
-
+        high_asia = float(asian["high"].max())
+        low_asia = float(asian["low"].min())
         asian_range = high_asia - low_asia
 
-        # London session start 08:00+
+        if asian_range == 0:
+            continue
+
+        # London session 08+
         london = day_data[day_data["hour"] >= 8]
 
         if len(london) == 0:
@@ -43,19 +55,22 @@ def run_backtest(
 
         entry_price = None
         direction = None
+        entry_index = None
 
-        for idx, row in london.iterrows():
-
-            price = row["Close"]
+        # breakout detection
+        for i in range(len(london)):
+            price = float(london["close"].iloc[i])
 
             if price > high_asia:
                 entry_price = price
                 direction = 1
+                entry_index = i
                 break
 
             elif price < low_asia:
                 entry_price = price
                 direction = -1
+                entry_index = i
                 break
 
         if entry_price is None:
@@ -66,9 +81,9 @@ def run_backtest(
 
         trade_closed = False
 
-        for idx, row in london.loc[idx:].iterrows():
+        for j in range(entry_index, len(london)):
 
-            price = row["Close"]
+            price = float(london["close"].iloc[j])
 
             if direction == 1:
                 if price <= entry_price - stop_distance:
