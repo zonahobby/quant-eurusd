@@ -1,40 +1,50 @@
 from src.download_data import download_all
-from src.features import build_datasets
-from src.model import train_and_predict
-from src.signal import build_signal
-from src.plot import create_plot
 from src.backtest import run_backtest
-from src.backtest import walkforward_mean_reversion
+import yfinance as yf
 import json
 
 
+PAIRS = [
+    "EURUSD=X",
+    "GBPUSD=X",
+    "USDJPY=X",
+    "AUDUSD=X",
+    "USDCAD=X",
+]
+
+
+def download_pair(symbol):
+    df = yf.download(symbol, period="15y", interval="1d", progress=False)
+    df = df.dropna()
+    return df
+
+
 def main():
-    daily, hourly = download_all()
 
-    # ===== SEGNALE =====
-    X_train, y_train, X_today, price_today = build_datasets(daily)
-    prob_up = train_and_predict(X_train, y_train, X_today)
-    signal = build_signal(prob_up, price_today)
+    all_results = {}
+    combined_equity = 1.0
 
-    create_plot(daily, signal["forecast"], signal["price"])
+    for pair in PAIRS:
 
-    # ===== BACKTEST =====
-    results = run_backtest(daily)
+        print(f"\nRunning backtest for {pair}")
 
-    with open("output/metrics.json", "w") as f:
-        json.dump(results, f, indent=2)
+        df = download_pair(pair)
 
-    print("BACKTEST RESULTS:", results)
-    print("Signal:", signal)   # ← RESTA QUI
+        result = run_backtest(df)
 
-    # ===== WALK-FORWARD =====
-    wf_results, wf_equity = walkforward_mean_reversion(daily)
+        all_results[pair] = result
 
-    with open("output/walkforward.json", "w") as f:
-        json.dump(wf_results, f, indent=2)
+        # accumula equity globale
+        combined_equity *= (1 + result["total_return"])
 
-    print("WALKFORWARD:", wf_results)
-    print("WF FINAL EQUITY:", wf_equity)
+    # salva risultati
+    with open("output/multi_asset_results.json", "w") as f:
+        json.dump(all_results, f, indent=2)
+
+    print("\n=== MULTI ASSET RESULTS ===")
+    print(all_results)
+    print("Combined equity multiplier:", combined_equity)
+
 
 if __name__ == "__main__":
     main()
