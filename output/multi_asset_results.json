@@ -1,7 +1,7 @@
 {
   "EURUSD=X": {
     "rows_downloaded": 3904,
-    "download_time_seconds": 0.31,
+    "download_time_seconds": 0.36,
     "status": "backtest_done",
     "backtest": {
       "total_return": 0.0,
@@ -12,7 +12,7 @@
   },
   "GBPUSD=X": {
     "rows_downloaded": 3904,
-    "download_time_seconds": 0.29,
+    "download_time_seconds": 0.32,
     "status": "backtest_done",
     "backtest": {
       "total_return": 0.0,
