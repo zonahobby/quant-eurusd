@@ -1,7 +1,7 @@
 {
   "EURUSD=X": {
     "rows_downloaded": 3905,
-    "download_time_seconds": 0.37,
+    "download_time_seconds": 0.48,
     "status": "backtest_done",
     "backtest": {
       "total_return": 0.0,
@@ -11,8 +11,8 @@
     }
   },
   "GBPUSD=X": {
-    "rows_downloaded": 3906,
-    "download_time_seconds": 0.17,
+    "rows_downloaded": 3907,
+    "download_time_seconds": 0.21,
     "status": "backtest_done",
     "backtest": {
       "total_return": 0.0,
@@ -23,7 +23,7 @@
   },
   "USDJPY=X": {
     "rows_downloaded": 3906,
-    "download_time_seconds": 0.16,
+    "download_time_seconds": 0.27,
     "status": "backtest_done",
     "backtest": {
       "total_return": 0.0,
@@ -34,7 +34,7 @@
   },
   "AUDUSD=X": {
     "rows_downloaded": 3906,
-    "download_time_seconds": 0.17,
+    "download_time_seconds": 0.21,
     "status": "backtest_done",
     "backtest": {
       "total_return": 0.0,
@@ -45,7 +45,7 @@
   },
   "USDCAD=X": {
     "rows_downloaded": 3906,
-    "download_time_seconds": 0.16,
+    "download_time_seconds": 0.23,
     "status": "backtest_done",
     "backtest": {
       "total_return": 0.0,
